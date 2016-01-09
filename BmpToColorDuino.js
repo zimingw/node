@@ -40,6 +40,7 @@ pngparser.parseFile("./fourCorners.png", function(err, data){
 
 	function printImage(imgArray){
 		var buffer = new Array();
+		console.log(imgArray[0])
 		var index = 1;
 		for(var j = 0; j < 8; j++)
 		{
@@ -49,13 +50,16 @@ pngparser.parseFile("./fourCorners.png", function(err, data){
 				var pixel = "[";
 				for(var h=0; h<3; h++)
 				{
-					pixel = pixel + imgArray[index++] + ",";
+					pixel = pixel + imgArray[index++];
+					if(h < 2)
+						pixel +=  ",";
 				}
 				pixel = pixel + "]";
 				row = row + pixel;
 			}
 			console.log(row);	
 		}
+		console.log(imgArray[index]);
 		return buffer;
 	};
 
