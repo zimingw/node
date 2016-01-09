@@ -1,6 +1,11 @@
 //Requirements...
 var pngparser = require("pngparse");
 var color = require("cli-color");
+var SerialPort = require("serialport").SerialPort;
+
+// var serialPort = new SerialPort("/dev/tty.usbserial-A50285BI", {
+// 	baudrate: 115200
+// });
 
 //Constants
 var startByte = 0x10;
@@ -13,6 +18,7 @@ var colorDuinoAddress = 0x05; //subject to change.
 var redArray = new Array();
 var greenArray = new Array();
 var blueArray = new Array();
+var imageArray = new Array();
 
 function buildArray(buffer, colorByte, colorArray)
 {
@@ -22,40 +28,55 @@ function buildArray(buffer, colorByte, colorArray)
 	buffer.push(endByte);
 };
 
-function sendImageViaI2C()
+function sendImageViaSerial()
 {
-	//Send xxxArray via i2c to colorduino here in order of red, green, blue
-	console.log(color.blue("Sending blue channel"));
-	console.log(color.blue(blueArray));
+
 };
 
 //Load bmp file pixels...
-pngparser.parseFile("./blue_four_Corners.png", function(err, data){
+pngparser.parseFile("./fourCorners.png", function(err, data){
 	if(err)
 		throw err;
 
-	function printChannel(pos, colorFunc){
+	function printImage(imgArray){
 		var buffer = new Array();
+		var index = 1;
 		for(var j = 0; j < 8; j++)
 		{
 			var row = "";
 			for(var i = 0; i < 8; i++)
 			{
-				var index = j*8*4 + i*4 +pos;
-				var row = row + data.data[index] + " | ";
-				buffer.push(data.data[index]);
+				var pixel = "[";
+				for(var h=0; h<3; h++)
+				{
+					pixel = pixel + imgArray[index++] + ",";
+				}
+				pixel = pixel + "]";
+				row = row + pixel;
 			}
-			console.log(colorFunc(row));		
+			console.log(row);	
 		}
 		return buffer;
 	};
 
-	buildArray(redArray, redByte, printChannel(0, color.red));
-	buildArray(greenArray, greenByte, printChannel(1, color.green));
-	buildArray(blueArray, blueByte, printChannel(2, color.blue));
-	printChannel(3, color.white);
+	function extractRGB()
+	{
+		var buffer = new Array();
+		for(var j = 0; j < data.data.length; j++)
+		{
+			if((j + 1) % 4 == 0)continue;
+			buffer.push(data.data[j]);
+		}
+		return buffer;
+	}
 
-	sendImageViaI2C();
+	imageArray.push(startByte);
+	imageArray = imageArray.concat(extractRGB());
+	imageArray.push(endByte);
+
+	printImage(imageArray);
+
+	sendImageViaSerial();
 });
 
 
