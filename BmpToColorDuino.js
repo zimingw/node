@@ -3,84 +3,97 @@ var pngparser = require("pngparse");
 var color = require("cli-color");
 var SerialPort = require("serialport").SerialPort;
 
-// var serialPort = new SerialPort("/dev/tty.usbserial-A50285BI", {
-// 	baudrate: 115200
-// });
-
 //Constants
 var startByte = 0x10;
 var endByte = 0x20;
 var redByte = 0x00;
 var greenByte = 0x01;
 var blueByte = 0x02;
-var colorDuinoAddress = 0x05; //subject to change.
 //Convert pixels data into
 var redArray = new Array();
 var greenArray = new Array();
 var blueArray = new Array();
-var imageArray = new Array();
 
-function buildArray(buffer, colorByte, colorArray)
+function buildSendBuffer(buffer, colorByte, colorArray)
 {
 	buffer.push(startByte);
 	buffer.push(colorByte);
-	buffer.push(colorArray);
+	buffer = buffer.concat(colorArray);
 	buffer.push(endByte);
+	return buffer;
 };
 
-function sendImageViaSerial()
+function sendImageViaSerial(arrayToSend)
 {
+	 var serialPort = new SerialPort("/dev/tty.usbserial-A50285BI", {
+	 	baudrate: 57600
+	 });
 
+	 serialPort.open(function(error){
+	 	if(error)
+	 	{
+	 		console.log(color.red(error));
+	 	}
+	 	else
+	 	{
+	 		console.log(color.green('open'));
+	 		serialPort.write(arrayToSend, function(err, result){
+	 			console.log(color.red(err));
+	 			console.log(color.green('result: ' + result));
+	 		});
+	 		serialPort.close();
+	 	}
+	 });
 };
 
+var imgFile = process.argv[2];
+console.log("Loading image file: " + imgFile);
 //Load bmp file pixels...
-pngparser.parseFile("./fourCorners.png", function(err, data){
+pngparser.parseFile(imgFile, function(err, data){
 	if(err)
 		throw err;
 
-	function printImage(imgArray){
-		var buffer = new Array();
-		console.log(imgArray[0])
+	function printImage(imgArray, colorFunc){
 		var index = 1;
 		for(var j = 0; j < 8; j++)
 		{
 			var row = "";
 			for(var i = 0; i < 8; i++)
 			{
-				var pixel = "[";
-				for(var h=0; h<3; h++)
-				{
-					pixel = pixel + imgArray[index++];
-					if(h < 2)
-						pixel +=  ",";
-				}
-				pixel = pixel + "]";
+				var pixel = "[" + imgArray[j*8 + i] + "]";
 				row = row + pixel;
 			}
-			console.log(row);	
+			console.log(colorFunc(row));	
 		}
-		console.log(imgArray[index]);
-		return buffer;
 	};
 
 	function extractRGB()
 	{
-		var buffer = new Array();
 		for(var j = 0; j < data.data.length; j++)
 		{
-			if((j + 1) % 4 == 0)continue;
-			buffer.push(data.data[j]);
+			if ((j + 4) % 4 == 0)//red channel
+				redArray.push(data.data[j]);
+			else if ((j + 3) % 4 == 0)//green channel
+				greenArray.push(data.data[j]);
+			else if ((j + 2) % 4 == 0)//blue channel
+				blueArray.push(data.data[j]);
 		}
-		return buffer;
+		printImage(redArray, color.red);
+		printImage(greenArray, color.green);
+		printImage(blueArray, color.blue);
 	}
 
-	imageArray.push(startByte);
-	imageArray = imageArray.concat(extractRGB());
-	imageArray.push(endByte);
+	function sendBuffer(colorByte, colorArray)
+	{
+		var sendBuffer = new Array();
+		sendBuffer = buildSendBuffer(sendBuffer, colorByte, colorArray);	
+		sendImageViaSerial(sendBuffer);	
+	}
 
-	printImage(imageArray);
-
-	sendImageViaSerial();
+	extractRGB();
+	sendBuffer(redByte, redArray);
+	sendBuffer(greenByte, greenArray);
+	sendBuffer(blueByte, blueArray);
 });
 
 
