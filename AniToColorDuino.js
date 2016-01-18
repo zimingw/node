@@ -120,6 +120,7 @@ serialPort.open(function(error){
 			if(files.length == 1){
 				console.log("find one file only.");
 				sendFile(files[0], 0);
+				sleep.sleep(5);
 			}
 			else{
 				console.log("find multiple file, let's create an animation.");
