@@ -64,6 +64,10 @@ function sendFile(imgFile, index)
 
 		function extractRGB()
 		{
+			redArray = [];
+			greenArray = [];
+			blueArray = [];
+
 			for(var j = 0; j < data.data.length; j++)
 			{
 				if ((j + 4) % 4 == 0)//red channel
@@ -80,6 +84,7 @@ function sendFile(imgFile, index)
 
 		function sendBuffer(colorByte, colorArray, index)
 		{
+			console.log("Sending channel of (" + index + ") color: " + colorByte);
 			var sendBuffer = new Array();
 			sendBuffer = buildSendBuffer(sendBuffer, colorByte, colorArray, index);	
 			sendImageViaSerial(sendBuffer);	
@@ -97,33 +102,35 @@ console.log("Loading image file: " + imgFile);
 
 var serialPort = new SerialPort("/dev/tty.usbserial-A50285BI", {
 	baudrate: 57600
-});
+}, false);
 
 serialPort.open(function(error){
-	if(error)
-	{
+	if(error){
 		console.log(color.red(error));
 	}
-	else
-	{
+	else{
 		console.log(color.green('open'));
-		serialPort.on('data', function(data){
-			console.log('received: ' + data);
+
+	    serialPort.on('data', function(data) {
+      		console.log(color.blue('data received: ' + data));
+    	});
+
+		glob(imgFile + "*.png", null, function (err, files){
+			console.log(files);
+			if(files.length == 1){
+				console.log("find one file only.");
+				sendFile(files[0], 0);
+			}
+			else{
+				console.log("find multiple file, let's create an animation.");
+				for (var i=0; i<files.length; i++){
+					console.log("sending " + files[i]);
+					sendFile(files[i], i);
+					sleep.sleep(2);
+				}
+			}
 		});
 	}
 });
 
-glob(imgFile + "*.png", null, function (err, files){
-	console.log(files);
-	if(files.length == 1){
-		console.log("find one file only.");
-		sendFile(files[0], 0);
-	}
-	else{
-		console.log("find multiple file, let's create an animation.");
-		for (var i=0; i<files.length; i++){
-			sendFile(files[i], i);
-			sleep.sleep(5);
-		}
-	}
-});
+
