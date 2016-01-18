@@ -126,7 +126,7 @@ serialPort.open(function(error){
 				for (var i=0; i<files.length; i++){
 					console.log("sending " + files[i]);
 					sendFile(files[i], i);
-					sleep.sleep(2);
+					sleep.sleep(1);
 				}
 			}
 		});
