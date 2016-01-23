@@ -101,7 +101,7 @@ var imgFile = process.argv[2];
 console.log("Loading image file: " + imgFile);
 
 var serialPort = new SerialPort("/dev/tty.usbserial-A50285BI", {
-	baudrate: 57600
+	baudrate: 9600
 }, false);
 
 serialPort.open(function(error){
